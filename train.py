@@ -11,6 +11,7 @@ import cPickle
 
 EPOCHS = 1 
 MODEL_PATH = "./model.pkl"
+OPTIMIZER_PATH = "./optimizer.pkl"
 
 
 if __name__ == "__main__":
@@ -23,16 +24,17 @@ if __name__ == "__main__":
 
     # load dst sequence
     train_dst_vocab = {}
-    train_dst_data = load_data("./ptb.train.txt", train_dst_vocab)
+    train_dst_data = load_data("./ptb.test.txt", train_dst_vocab)
     print("train_dst_data.shape = {s}".format(s=train_dst_data.shape))
     print("len(train_dst_vocab) = {s}".format(s=len(train_dst_vocab)))
 
     # make a network
     src_vocab_size = len(train_src_vocab)
     src_embed_size = 100
-    hidden_size = 100
-    dst_mebed_size = 100
+    hidden_size = 200
+    dst_mebed_size = 50
     dst_vocab_size = len(train_dst_vocab) 
+
     seq2seq = Seq2Seq(
         src_vocab_size, 
         src_embed_size, 
@@ -43,7 +45,7 @@ if __name__ == "__main__":
     seq2seq.reset_state()
     seq2seq.to_gpu()
 
-    # select a optimizer
+    # select a optimizer # inside a loop of epoch?
     optimizer = optimizers.SGD()
     optimizer.setup(seq2seq)
 
@@ -54,22 +56,25 @@ if __name__ == "__main__":
             x = Variable(cuda.cupy.array([[word]], dtype=np.int32)) 
             p = seq2seq.encode(x)
 
-        q = seq2seq.con(p)
+        q = seq2seq.connect(p)
 
         # decode
-        accum_loss = 0
+        acc_loss = 0
         for word in train_dst_data:
-            word_one_hot = make_one_hot(word, dst_vocab_size)
             t = Variable(cuda.cupy.array([word], dtype=np.int32))
+            
+            word_one_hot = make_one_hot(word, dst_vocab_size)
             t_one_hot = Variable(cuda.cupy.array(word_one_hot, dtype=np.float32))
+
             q, loss = seq2seq.decode(q, t, t_one_hot)
-            accum_loss += loss
+            acc_loss += loss
 
         seq2seq.zerograds()
-        accum_loss.backward()
-        accum_loss.unchain_backward()
+        acc_loss.backward()
+        acc_loss.unchain_backward()
         optimizer.update()
 
-    # save a model 
+    # save a model and an optimizer
     cPickle.dump(seq2seq, open(MODEL_PATH, "wb"))
+    cPickle.dump(optimizer, open(OPTIMIZER_PATH, "wb"))
 

@@ -5,14 +5,11 @@ import chainer
 from chainer import Variable
 import chainer.links as L
 import chainer.functions as F
-#from add import add
-#import numpy as np
-#import math
-from chainer import cuda
 
 
 class Seq2Seq(chainer.Chain):
 
+    # test ok
     def __init__(self, src_vocab_size, src_embed_size, hidden_size, dst_embed_size, dst_vocab_size):
         """
         :param src_vocab_size: the number of source vocabulary 
@@ -23,39 +20,40 @@ class Seq2Seq(chainer.Chain):
         """
         super(Seq2Seq, self).__init__(
             w_xi=L.EmbedID(src_vocab_size, src_embed_size),
-            enc=L.LSTM(src_embed_size, hidden_size), # encoder
-            con=L.LSTM(hidden_size, hidden_size), # connector
+            w_ip=L.LSTM(src_embed_size, hidden_size),
+            w_pq=L.LSTM(hidden_size, hidden_size),
             w_qj=L.Linear(hidden_size, dst_embed_size),
             w_jy=L.Linear(dst_embed_size, dst_vocab_size),
-            dec=L.LSTM(dst_vocab_size, hidden_size) # decoder
+            w_yq=L.LSTM(dst_vocab_size, hidden_size)
         )
 
         self.train = True
 
+    # test ok
     def reset_state(self):
-        self.enc.reset_state()
-        self.dec.reset_state()
-        self.con.reset_state()
+        self.w_ip.reset_state()
+        self.w_pq.reset_state()
+        self.w_yq.reset_state()
 
-    def encode(self, v):
-        i = F.tanh(self.w_xi(v))
-        p = self.enc(i)
+    def encode(self, x):
+        i = F.tanh(self.w_xi(x))
+        p = self.w_ip(i)
         return p
 
     def connect(self, x):
-        return self.con(x) # dropout?
+        return self.w_pq(x) # dropout?
 
     def decode(self, q, t=None, t_one_hot=None):
         j = F.tanh(self.w_qj(q)) 
         y = self.w_jy(j)
         if self.train:
             loss = F.softmax_cross_entropy(y, t)
-            q = self.dec(t_one_hot)
+            q = self.w_yq(t_one_hot)
             return q, loss
         else:
             word = y.data.argmax(1)[0]
-            q = self.dec(y)
-        return q, word 
+            q = self.w_yq(y)
+            return q, word 
 
 
 import unittest

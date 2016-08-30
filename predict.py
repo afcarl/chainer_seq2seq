@@ -26,7 +26,7 @@ if __name__ == "__main__":
         x = Variable(cuda.cupy.array([[word]], dtype=np.int32)) 
         p = seq2seq.encode(x)
 
-    q = seq2seq.con(p)
+    q = seq2seq.connect(p)
 
     # decode
     for _ in range(UPPER_LENGTH):

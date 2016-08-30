@@ -90,3 +90,5 @@ ENV/
 
 # kumada adds
 ptb.train.txt
+ptb.test.txt
+*.pkl
