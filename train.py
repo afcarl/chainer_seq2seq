@@ -13,60 +13,60 @@ EPOCHS = 1
 MODEL_PATH = "./model.pkl"
 OPTIMIZER_PATH = "./optimizer.pkl"
 
+xp = cuda.cupy
 
 if __name__ == "__main__":
 
     # load src sequence
-    train_src_vocab = {}
-    train_src_data = load_data("./ptb.train.txt", train_src_vocab)
+    train_src_data = np.array([[1, 2, 3]], dtype=np.float32) 
     print("train_src_data.shape = {s}".format(s=train_src_data.shape))
-    print("len(train_src_vocab) = {s}".format(s=len(train_src_vocab)))
 
-    # load dst sequence
-    train_dst_vocab = {}
-    train_dst_data = load_data("./ptb.test.txt", train_dst_vocab)
-    print("train_dst_data.shape = {s}".format(s=train_dst_data.shape))
-    print("len(train_dst_vocab) = {s}".format(s=len(train_dst_vocab)))
+    # make destination sequence
+    train_dst_data = np.fliplr(train_src_data)
 
     # make a network
-    src_vocab_size = len(train_src_vocab)
-    src_embed_size = 100
-    hidden_size = 200
-    dst_mebed_size = 50
-    dst_vocab_size = len(train_dst_vocab) 
+    inout_units = 1 
+    print("inout_units: {s}".format(s=inout_units))
+    hidden_units = 30
 
     seq2seq = Seq2Seq(
-        src_vocab_size, 
-        src_embed_size, 
-        hidden_size, 
-        dst_mebed_size, 
-        dst_vocab_size
+        inout_units, 
+        hidden_units 
     )
     seq2seq.reset_state()
     seq2seq.to_gpu()
 
-    # select a optimizer # inside a loop of epoch?
+    # select a optimizer
     optimizer = optimizers.SGD()
     optimizer.setup(seq2seq)
+
+    rows, cols = train_src_data.shape
 
     # training
     for _ in range(EPOCHS):
         # encode
-        for word in train_src_data:
-            x = Variable(cuda.cupy.array([[word]], dtype=np.int32)) 
+        for i in range(cols):
+            x = Variable(
+                xp.asarray(
+                    [train_src_data[j, i] for j in range(rows)], 
+                    dtype=np.float32
+                )[:, np.newaxis],
+                volatile="off"
+            ) 
             p = seq2seq.encode(x)
-
-        q = seq2seq.connect(p)
-
+        
         # decode
         acc_loss = 0
-        for word in train_dst_data:
-            t = Variable(cuda.cupy.array([word], dtype=np.int32))
-            
-            word_one_hot = make_one_hot(word, dst_vocab_size)
-            t_one_hot = Variable(cuda.cupy.array(word_one_hot, dtype=np.float32))
+        for i in range(cols):
+            t = Variable(
+                xp.asarray(
+                    [train_dst_data[j, i] for j in range(rows)], 
+                    dtype=np.float32
+                )[:, np.newaxis],
+                volatile="off"
+            )
 
-            q, loss = seq2seq.decode(q, t, t_one_hot)
+            p, loss = seq2seq.decode(p, t)
             acc_loss += loss
 
         seq2seq.zerograds()
