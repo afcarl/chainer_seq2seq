@@ -1,59 +1,53 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+"""
+Seq2Seq
+"""
 import chainer
 from chainer import Variable
 import chainer.links as L
 import chainer.functions as F
 
 
+__authotr__ = "kumada"
+__version__ = 0.0
+__date__ = ""
+
 class Seq2Seq(chainer.Chain):
 
     # test ok
-    def __init__(self, src_vocab_size, src_embed_size, hidden_size, dst_embed_size, dst_vocab_size):
+    def __init__(self, inout_units, hidden_units):
         """
-        :param src_vocab_size: the number of source vocabulary 
-        :param src_embed_size: the number of source embedded units
-        :param hidden_size: the number of hidden units 
-        :param dst_embed_size: the number of destination embedded units
-        :param dst_vocab_size: the number of destination vocabulary units
+        @param inout_units: the number of input units 
+        @param hidden_units: the number of hidden units 
         """
         super(Seq2Seq, self).__init__(
-            w_xi=L.EmbedID(src_vocab_size, src_embed_size),
-            w_ip=L.LSTM(src_embed_size, hidden_size),
-            w_pq=L.LSTM(hidden_size, hidden_size),
-            w_qj=L.Linear(hidden_size, dst_embed_size),
-            w_jy=L.Linear(dst_embed_size, dst_vocab_size),
-            w_yq=L.LSTM(dst_vocab_size, hidden_size)
+            l1=L.LSTM(inout_units, hidden_units),
+            l2=L.Linear(hidden_units, inout_units)
         )
 
         self.train = True
 
     # test ok
     def reset_state(self):
-        self.w_ip.reset_state()
-        self.w_pq.reset_state()
-        self.w_yq.reset_state()
+        self.l1.reset_state()
 
     def encode(self, x):
-        i = F.tanh(self.w_xi(x))
-        p = self.w_ip(i)
+        p = self.l1(x)
         return p
 
-    def connect(self, x):
-        return self.w_pq(x) # dropout?
-
-    def decode(self, q, t=None, t_one_hot=None):
-        j = F.tanh(self.w_qj(q)) 
-        y = self.w_jy(j)
+    def decode(self, p, x):
+        """
+        @param p
+        @param x ground truth
+        """
+        y = self.l2(p) 
         if self.train:
-            loss = F.softmax_cross_entropy(y, t)
-            q = self.w_yq(t_one_hot)
-            return q, loss
+            loss = F.mean_squared_error(y, x)
+            p = self.l1(y) # x should be given to self.l1?
+            return p, loss
         else:
-            word = y.data.argmax(1)[0]
-            q = self.w_yq(y)
-            return q, word 
+            return y 
 
 
 import unittest
@@ -63,23 +57,11 @@ import numpy as np
 class TestSeq2Seq(unittest.TestCase):
 
     def test_init(self):
-        src_vocab_size = 100
-        src_embed_size = 100
-        hidden_size = 100
-        dst_mebed_size = 100
-        dst_vocab_size = 100
-        seq2seq = Seq2Seq(src_vocab_size, src_embed_size, hidden_size, dst_mebed_size, dst_vocab_size)
+        inout_units = 1
+        hidden_units = 30
+        seq2seq = Seq2Seq(inout_units, hidden_units)
         seq2seq.reset_state()
-
-    def test_reset_state(self):
-        src_vocab_size = 100
-        src_embed_size = 100
-        hidden_size = 100
-        dst_mebed_size = 100
-        dst_vocab_size = 100
-        seq2seq = Seq2Seq(src_vocab_size, src_embed_size, hidden_size, dst_mebed_size, dst_vocab_size)
-        seq2seq.reset_state()
-       
+      
 
 if __name__ == "__main__":
     unittest.main()
