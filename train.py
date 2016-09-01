@@ -6,7 +6,6 @@ import numpy as np
 from chainer import optimizers
 from chainer import Variable
 from chainer import cuda
-from utils import *
 import cPickle
 
 EPOCHS = 1 
@@ -18,7 +17,7 @@ xp = cuda.cupy
 if __name__ == "__main__":
 
     # load src sequence
-    train_src_data = np.array([[1, 2, 3]], dtype=np.float32) 
+    train_src_data = np.array([[1, 2, 3], [10, 20, 30], [10, 20, 30]], dtype=np.float32) 
     print("train_src_data.shape = {s}".format(s=train_src_data.shape))
 
     # make destination sequence

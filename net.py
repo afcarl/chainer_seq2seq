@@ -36,18 +36,19 @@ class Seq2Seq(chainer.Chain):
         p = self.l1(x)
         return p
 
-    def decode(self, p, x):
+    def decode(self, p, t=None):
         """
         @param p
-        @param x ground truth
+        @param t ground truth
         """
         y = self.l2(p) 
         if self.train:
-            loss = F.mean_squared_error(y, x)
-            p = self.l1(y) # x should be given to self.l1?
+            loss = F.mean_squared_error(y, t)
+            p = self.l1(t) # t should be given to self.l1?
             return p, loss
         else:
-            return y 
+            p = self.l1(y)
+            return p, y
 
 
 import unittest
