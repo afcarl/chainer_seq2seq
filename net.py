@@ -44,7 +44,7 @@ class Seq2Seq(chainer.Chain):
         y = self.l2(p) 
         if self.train:
             loss = F.mean_squared_error(y, t)
-            p = self.l1(t) # t should be given to self.l1?
+            p = self.l1(t) 
             return p, loss
         else:
             p = self.l1(y)

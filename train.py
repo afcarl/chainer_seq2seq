@@ -1,53 +1,53 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from net import Seq2Seq
+import net
 import numpy as np
 from chainer import optimizers
 from chainer import Variable
 from chainer import cuda
 import cPickle
-
-EPOCHS = 1 
-MODEL_PATH = "./model.pkl"
-OPTIMIZER_PATH = "./optimizer.pkl"
+import params
+import sys
 
 xp = cuda.cupy
 
-if __name__ == "__main__":
 
-    # load src sequence
-    train_src_data = np.array([[1, 2, 3], [10, 20, 30], [10, 20, 30]], dtype=np.float32) 
-    print("train_src_data.shape = {s}".format(s=train_src_data.shape))
+def initialize_model(model):
+    for param in model.params():
+        data = param.data
+        data[:] = np.random.uniform(-0.1, 0.1, data.shape)
 
+    
+def train(src_data):
     # make destination sequence
-    train_dst_data = np.fliplr(train_src_data)
+    dst_data = np.fliplr(src_data)
 
     # make a network
-    inout_units = 1 
-    print("inout_units: {s}".format(s=inout_units))
-    hidden_units = 30
-
-    seq2seq = Seq2Seq(
-        inout_units, 
-        hidden_units 
+    seq2seq = net.Seq2Seq(
+        params.INOUT_UNITS, 
+        params.HIDDEN_UNITS 
     )
-    seq2seq.reset_state()
+    initialize_model(seq2seq)    
     seq2seq.to_gpu()
 
     # select a optimizer
     optimizer = optimizers.SGD()
     optimizer.setup(seq2seq)
 
-    rows, cols = train_src_data.shape
+    rows, cols = src_data.shape
+    log_file = open(params.LOG_FILE_PATH, "w")
 
     # training
-    for _ in range(EPOCHS):
+    for epoch in range(params.EPOCHS):
+        seq2seq.reset_state()
+        seq2seq.zerograds()
+
         # encode
         for i in range(cols):
             x = Variable(
                 xp.asarray(
-                    [train_src_data[j, i] for j in range(rows)], 
+                    [src_data[j, i] for j in range(rows)], 
                     dtype=np.float32
                 )[:, np.newaxis],
                 volatile="off"
@@ -59,7 +59,7 @@ if __name__ == "__main__":
         for i in range(cols):
             t = Variable(
                 xp.asarray(
-                    [train_dst_data[j, i] for j in range(rows)], 
+                    [dst_data[j, i] for j in range(rows)], 
                     dtype=np.float32
                 )[:, np.newaxis],
                 volatile="off"
@@ -68,12 +68,28 @@ if __name__ == "__main__":
             p, loss = seq2seq.decode(p, t)
             acc_loss += loss
 
-        seq2seq.zerograds()
         acc_loss.backward()
-        acc_loss.unchain_backward()
+        #acc_loss.unchain_backward()
         optimizer.update()
 
-    # save a model and an optimizer
-    cPickle.dump(seq2seq, open(MODEL_PATH, "wb"))
-    cPickle.dump(optimizer, open(OPTIMIZER_PATH, "wb"))
+        if epoch != 0 and epoch % params.DISPLAY_EPOCH == 0:
+            train_loss = acc_loss.data / cols
+            message = "[{i}]train loss:\t{l}".format(i=epoch, l=train_loss)
+            #print(message)
+            #sys.stdout.flush()
+            log_file.write(message + "\n")
+            log_file.flush()
+        
 
+    # save a model and an optimizer
+    cPickle.dump(seq2seq, open(params.MODEL_PATH, "wb"))
+    cPickle.dump(optimizer, open(params.OPTIMIZER_PATH, "wb"))
+
+
+if __name__ == "__main__":
+
+    # load src sequence
+    src_data = np.array([[1, 2, 3], [10, 20, 30], [10, 20, 30]], dtype=np.float32) 
+    print("src_data.shape = {s}".format(s=src_data.shape))
+
+    train(src_data)
