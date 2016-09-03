@@ -32,14 +32,14 @@ def train(src_data):
     seq2seq.to_gpu()
 
     # select a optimizer
-    optimizer = optimizers.SGD()
+    optimizer = optimizers.Adam()
     optimizer.setup(seq2seq)
 
     rows, cols = src_data.shape
     log_file = open(params.LOG_FILE_PATH, "w")
 
     # training
-    for epoch in range(params.EPOCHS):
+    for epoch in range(1, params.EPOCHS + 1):
         seq2seq.reset_state()
         seq2seq.zerograds()
 
@@ -72,7 +72,8 @@ def train(src_data):
         #acc_loss.unchain_backward()
         optimizer.update()
 
-        if epoch != 0 and epoch % params.DISPLAY_EPOCH == 0:
+        #if epoch != 0 and epoch % params.DISPLAY_EPOCH == 0:
+        if epoch % params.DISPLAY_EPOCH == 0:
             train_loss = acc_loss.data / cols
             message = "[{i}]train loss:\t{l}".format(i=epoch, l=train_loss)
             #print(message)

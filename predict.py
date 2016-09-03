@@ -50,21 +50,3 @@ if __name__ == "__main__":
     results = predict(seq2seq, src_data)
     print(results)
 
-#    rows, cols = src_data.shape
-    
-#    # encode
-#    for i in range(cols):
-#        x = Variable(
-#            xp.asarray(
-#                [src_data[j, i] for j in range(rows)], 
-#                dtype=np.float32
-#            )[:, np.newaxis]
-#        ) 
-#        p = seq2seq.encode(x)
-#
-#    # decode
-#    results = np.ndarray((rows, cols), dtype=np.float32)
-#    for i in range(cols):
-#        p, y = seq2seq.decode(p)
-#        t = chainer.cuda.to_cpu(y.data)
-#        results[:, i] = chainer.cuda.to_cpu(y.data).reshape((rows,))
