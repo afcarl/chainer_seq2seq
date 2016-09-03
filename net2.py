@@ -22,18 +22,21 @@ class Seq2Seq(chainer.Chain):
         @param hidden_units: the number of hidden units 
         """
         super(Seq2Seq, self).__init__(
-            l1=L.LSTM(inout_units, hidden_units),
-            l2=L.Linear(hidden_units, inout_units)
+            l1=L.Linear(inout_units, hidden_units),
+            l2=L.LSTM(hidden_units, hidden_units),
+            l3=L.Linear(hidden_units, hidden_units),
+            l4=L.Linear(hidden_units, inout_units)
         )
 
         self.train = True
 
     # test ok
     def reset_state(self):
-        self.l1.reset_state()
+        self.l2.reset_state()
 
     def encode(self, x):
-        p = self.l1(x)
+        h = self.l1(x)
+        p = self.l2(h)
         return p
 
     def decode(self, p, t=None):
@@ -41,13 +44,13 @@ class Seq2Seq(chainer.Chain):
         @param p
         @param t ground truth
         """
-        y = self.l2(p) 
+        h = self.l3(p) 
+        y = self.l4(h)
+        p = self.l2(h) 
         if self.train:
             loss = F.mean_squared_error(y, t)
-            p = self.l1(t) 
             return p, loss
         else:
-            p = self.l1(y)
             return p, y
 
 
