@@ -33,7 +33,6 @@ def predict(model, src_data):
     results = np.ndarray((rows, cols), dtype=np.float32)
     for i in range(cols):
         p, y = predictor.decode(p)
-        t = chainer.cuda.to_cpu(y.data)
         results[:, i] = chainer.cuda.to_cpu(y.data).reshape((rows,))
     return results
 

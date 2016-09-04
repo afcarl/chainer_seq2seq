@@ -9,6 +9,7 @@ from chainer import cuda
 import cPickle
 import params
 import sys
+import time
 
 xp = cuda.cupy
 
@@ -18,10 +19,47 @@ def initialize_model(model):
         data = param.data
         data[:] = np.random.uniform(-0.1, 0.1, data.shape)
 
+
+def compute_loss(model, src_data, dst_data, volatile):
+    rows, cols = src_data.shape
     
-def train(src_data):
+    # encode
+    for i in range(cols):
+        x = Variable(
+            xp.asarray(
+                [src_data[j, i] for j in range(rows)], 
+                dtype=np.float32
+            )[:, np.newaxis],
+            volatile=volatile
+        ) 
+        p = model.encode(x)
+    
+    # decode
+    acc_loss = 0
+    for i in range(cols):
+        t = Variable(
+            xp.asarray(
+                [dst_data[j, i] for j in range(rows)], 
+                dtype=np.float32
+            )[:, np.newaxis],
+            volatile=volatile
+        )
+
+        p, loss = model.decode(p, t)
+        acc_loss += loss
+    return acc_loss
+
+
+def validate(model, src_data, dst_data):
+    validator = model.copy()
+    validator.reset_state()
+    return compute_loss(validator, src_data, dst_data, "on")
+
+
+def train(train_src_data, valid_src_data):
     # make destination sequence
-    dst_data = np.fliplr(src_data)
+    train_dst_data = np.fliplr(train_src_data)
+    valid_dst_data = np.fliplr(valid_src_data)
 
     # make a network
     seq2seq = net.Seq2Seq(
@@ -35,49 +73,25 @@ def train(src_data):
     optimizer = optimizers.Adam()
     optimizer.setup(seq2seq)
 
-    rows, cols = src_data.shape
+    _, train_cols = train_src_data.shape
+    _, valid_cols = valid_src_data.shape
     log_file = open(params.LOG_FILE_PATH, "w")
+    start_time = time.time()
 
     # training
     for epoch in range(1, params.EPOCHS + 1):
         seq2seq.reset_state()
         seq2seq.zerograds()
-
-        # encode
-        for i in range(cols):
-            x = Variable(
-                xp.asarray(
-                    [src_data[j, i] for j in range(rows)], 
-                    dtype=np.float32
-                )[:, np.newaxis],
-                volatile="off"
-            ) 
-            p = seq2seq.encode(x)
-        
-        # decode
-        acc_loss = 0
-        for i in range(cols):
-            t = Variable(
-                xp.asarray(
-                    [dst_data[j, i] for j in range(rows)], 
-                    dtype=np.float32
-                )[:, np.newaxis],
-                volatile="off"
-            )
-
-            p, loss = seq2seq.decode(p, t)
-            acc_loss += loss
-
+        acc_loss = compute_loss(seq2seq, train_src_data, train_dst_data, "off")
         acc_loss.backward()
         #acc_loss.unchain_backward()
         optimizer.update()
 
-        #if epoch != 0 and epoch % params.DISPLAY_EPOCH == 0:
         if epoch % params.DISPLAY_EPOCH == 0:
-            train_loss = acc_loss.data / cols
-            message = "[{i}]train loss:\t{l}".format(i=epoch, l=train_loss)
-            #print(message)
-            #sys.stdout.flush()
+            train_loss = acc_loss.data / train_cols
+            valid_loss = validate(seq2seq, valid_src_data, valid_dst_data).data / valid_cols
+            message = "[{i}]train loss:\t{j}\tvalid loss:\t{k}".format(
+                    i=epoch, j=train_loss, k=valid_loss)
             log_file.write(message + "\n")
             log_file.flush()
         
@@ -85,6 +99,8 @@ def train(src_data):
     # save a model and an optimizer
     cPickle.dump(seq2seq, open(params.MODEL_PATH, "wb"))
     cPickle.dump(optimizer, open(params.OPTIMIZER_PATH, "wb"))
+    end_time = time.time()
+    log_file.write("{s}[m]".format(s=(end_time - start_time)/60))
 
 
 if __name__ == "__main__":
