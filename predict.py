@@ -37,6 +37,39 @@ def predict(model, src_data):
     return results
 
 
+def predict_(model, src_data):
+    predictor = model.copy()
+    predictor.train = False
+    predictor.reset_state()
+
+    dst_data = np.fliplr(src_data)
+    rows, cols = src_data.shape
+    
+    # encode
+    for i in range(cols):
+        x = Variable(
+            xp.asarray(
+                [src_data[j, i] for j in range(rows)], 
+                dtype=np.float32
+            )[:, np.newaxis]
+        ) 
+        p = predictor.encode(x)
+
+    # decode
+    results = np.ndarray((rows, cols), dtype=np.float32)
+    for i in range(cols):
+        t = Variable(
+            xp.asarray(
+                [dst_data[j, i] for j in range(rows)], 
+                dtype=np.float32
+            )[:, np.newaxis]
+        )
+
+        p, y = predictor.decode(p, t)
+        results[:, i] = chainer.cuda.to_cpu(y.data).reshape((rows,))
+    return results
+
+
 if __name__ == "__main__":
 
     # load src sequence
