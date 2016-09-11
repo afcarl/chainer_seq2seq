@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import net
+import net2
 import numpy as np
 from chainer import optimizers
 from chainer import Variable
@@ -22,12 +22,13 @@ def initialize_model(model):
 
 def compute_loss(model, src_data, dst_data, volatile):
     rows, cols = src_data.shape
+    indices = np.random.permutation(rows)
     
     # encode
     for i in range(cols):
         x = Variable(
             xp.asarray(
-                [src_data[j, i] for j in range(rows)], 
+                [src_data[indices[j], i] for j in range(rows)], 
                 dtype=np.float32
             )[:, np.newaxis],
             volatile=volatile
@@ -39,7 +40,7 @@ def compute_loss(model, src_data, dst_data, volatile):
     for i in range(cols):
         t = Variable(
             xp.asarray(
-                [dst_data[j, i] for j in range(rows)], 
+                [dst_data[indices[j], i] for j in range(rows)], 
                 dtype=np.float32
             )[:, np.newaxis],
             volatile=volatile
@@ -55,14 +56,10 @@ def validate(model, src_data, dst_data):
     validator.reset_state()
     return compute_loss(validator, src_data, dst_data, "on")
 
-
+    
 def train(train_src_data, valid_src_data):
-    # make destination sequence
-    train_dst_data = np.fliplr(train_src_data)
-    valid_dst_data = np.fliplr(valid_src_data)
-
     # make a network
-    seq2seq = net.Seq2Seq(
+    seq2seq = net2.Seq2Seq(
         params.INOUT_UNITS, 
         params.HIDDEN_UNITS 
     )
@@ -72,6 +69,14 @@ def train(train_src_data, valid_src_data):
     # select a optimizer
     optimizer = optimizers.Adam()
     optimizer.setup(seq2seq)
+
+    train_with_pretrained_model(seq2seq, optimizer, train_src_data, valid_src_data)
+
+
+def train_with_pretrained_model(seq2seq, optimizer, train_src_data, valid_src_data):
+    # make destination sequence
+    train_dst_data = np.fliplr(train_src_data)
+    valid_dst_data = np.fliplr(valid_src_data)
 
     _, train_cols = train_src_data.shape
     _, valid_cols = valid_src_data.shape

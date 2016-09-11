@@ -47,7 +47,7 @@ class Seq2Seq(chainer.Chain):
             p = self.l1(t) 
             return p, loss
         else:
-            p = self.l1(y)
+            p = self.l1(t)
             return p, y
 
 
