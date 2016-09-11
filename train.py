@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import net
+import net2
 import numpy as np
 from chainer import optimizers
 from chainer import Variable
@@ -59,7 +59,7 @@ def validate(model, src_data, dst_data):
     
 def train(train_src_data, valid_src_data):
     # make a network
-    seq2seq = net.Seq2Seq(
+    seq2seq = net2.Seq2Seq(
         params.INOUT_UNITS, 
         params.HIDDEN_UNITS 
     )
