@@ -14,6 +14,9 @@ __version__ = 0.0
 __date__ = ""
 
 class Seq2Seq(chainer.Chain):
+    Train = 1
+    Valid = 2
+    Test = 3
 
     # test ok
     def __init__(self, inout_units, hidden_units):
@@ -25,8 +28,7 @@ class Seq2Seq(chainer.Chain):
             l1=L.LSTM(inout_units, hidden_units),
             l2=L.Linear(hidden_units, inout_units)
         )
-
-        self.train = True
+        self.phase = Seq2Seq.Train
 
     # test ok
     def reset_state(self):
@@ -42,13 +44,18 @@ class Seq2Seq(chainer.Chain):
         @param t ground truth
         """
         y = self.l2(p) 
-        if self.train:
+        if self.phase is Seq2Seq.Train:
             loss = F.mean_squared_error(y, t)
             p = self.l1(t) 
             return p, loss
-        else:
-            p = self.l1(t)
-            return p, y
+        elif self.phase is Seq2Seq.Valid:
+            loss = F.mean_squared_error(y, t)
+            p = self.l1(y)
+            return p, loss
+        else: # Test
+            p = self.l1(y)
+            return p, y 
+
 
 
 import unittest

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import net2
+import net
 import numpy as np
 from chainer import optimizers
 from chainer import Variable
@@ -54,12 +54,13 @@ def compute_loss(model, src_data, dst_data, volatile):
 def validate(model, src_data, dst_data):
     validator = model.copy()
     validator.reset_state()
+    validator.phase = net.Seq2Seq.Valid
     return compute_loss(validator, src_data, dst_data, "on")
 
     
 def train(train_src_data, valid_src_data):
     # make a network
-    seq2seq = net2.Seq2Seq(
+    seq2seq = net.Seq2Seq(
         params.INOUT_UNITS, 
         params.HIDDEN_UNITS 
     )

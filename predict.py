@@ -14,7 +14,7 @@ xp = cuda.cupy
 
 def predict(model, src_data):
     predictor = model.copy()
-    predictor.train = False
+    predictor.phase = Seq2Seq.Test
     predictor.reset_state()
 
     rows, cols = src_data.shape
