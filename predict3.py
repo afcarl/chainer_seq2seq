@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from net4 import Seq2Seq
+from net3 import Seq2Seq
 import cPickle
 from chainer import Variable
 from chainer import cuda
@@ -13,9 +13,10 @@ xp = cuda.cupy
 
 
 def predict(model, src_data):
+    batch_size = src_data.shape[0]
     predictor = model.copy()
     predictor.phase = Seq2Seq.Test
-    predictor.reset_state()
+    predictor.reset_state(batch_size, "off")
 
     rows, cols = src_data.shape
     

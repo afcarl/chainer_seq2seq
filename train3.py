@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import net4
+import net3
 import numpy as np
 from chainer import optimizers
 from chainer import Variable
@@ -52,15 +52,16 @@ def compute_loss(model, src_data, dst_data, volatile):
 
 
 def validate(model, src_data, dst_data):
+    batch_size = src_data.shape[0]
     validator = model.copy()
-    validator.reset_state()
-    validator.phase = net4.Seq2Seq.Valid
+    validator.reset_state(batch_size, "on")
+    validator.phase = net3.Seq2Seq.Valid
     return compute_loss(validator, src_data, dst_data, "on")
 
     
 def train(train_src_data, valid_src_data):
     # make a network
-    seq2seq = net4.Seq2Seq(
+    seq2seq = net3.Seq2Seq(
         params.INOUT_UNITS, 
         params.HIDDEN_UNITS 
     )
@@ -85,10 +86,12 @@ def train_with_pretrained_model(seq2seq, optimizer, train_src_data, valid_src_da
     log_file = open(params.LOG_FILE_PATH, "w")
     start_time = time.time()
 
+    batch_size = train_src_data.shape[0]
+
     # training
     for epoch in range(1, params.EPOCHS + 1):
-        seq2seq.reset_state()
-        seq2seq.cleargrads()
+        seq2seq.reset_state(batch_size, "off")
+        seq2seq.zerograds()
         acc_loss = compute_loss(seq2seq, train_src_data, train_dst_data, "off")
         acc_loss.backward()
         #acc_loss.unchain_backward()
