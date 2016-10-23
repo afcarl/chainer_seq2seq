@@ -25,9 +25,9 @@ class Seq2Seq(chainer.Chain):
         @param hidden_units: the number of hidden units 
         """
         super(Seq2Seq, self).__init__(
-            l1=L.Linear(inout_units, hidden_units)
+            l1=L.Linear(inout_units, hidden_units),
             l2=L.LSTM(hidden_units, hidden_units),
-            l3=L.Linear(hidden_units, inout_units)
+            l3=L.Linear(hidden_units, inout_units),
         )
         self.phase = Seq2Seq.Train
 
