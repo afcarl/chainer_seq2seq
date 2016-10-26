@@ -68,8 +68,9 @@ def train(train_src_data, valid_src_data):
     seq2seq.to_gpu()
 
     # select a optimizer
-    #optimizer = optimizers.AdaGrad(lr=0.01)
+#    optimizer = optimizers.AdaGrad(lr=0.01)
     optimizer = optimizers.Adam()
+
     optimizer.setup(seq2seq)
 
     train_with_pretrained_model(seq2seq, optimizer, train_src_data, valid_src_data)

@@ -27,17 +27,22 @@ class Seq2Seq(chainer.Chain):
         super(Seq2Seq, self).__init__(
             l1=L.Linear(inout_units, hidden_units),
             l2=L.LSTM(hidden_units, hidden_units),
+            l4=L.LSTM(hidden_units, hidden_units),
+            l5=L.LSTM(hidden_units, hidden_units),
             l3=L.Linear(hidden_units, inout_units),
         )
         self.phase = Seq2Seq.Train
 
-    # test ok
     def reset_state(self):
         self.l2.reset_state()
+        self.l4.reset_state()
+        self.l5.reset_state()
 
     def encode(self, x):
         h = self.l1(x)
         p = self.l2(h)
+        p = self.l4(p)
+        p = self.l5(p)
         return p 
 
     def decode(self, p, t=None):
@@ -48,17 +53,14 @@ class Seq2Seq(chainer.Chain):
         y = self.l3(p) 
         if self.phase is Seq2Seq.Train:
             loss = F.mean_squared_error(y, t)
-            h = self.l1(t) 
-            p = self.l2(h)
+            p = self.encode(t)
             return p, loss
         elif self.phase is Seq2Seq.Valid:
             loss = F.mean_squared_error(y, t)
-            h = self.l1(y)
-            p = self.l2(h)
+            p = self.encode(y)
             return p, loss
         else: # Test
-            h = self.l1(y)
-            p = self.l2(h)
+            p = self.encode(y)
             return p, y 
 
 
