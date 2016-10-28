@@ -54,7 +54,7 @@ def compute_loss(model, src_data, dst_data, volatile):
 def validate(model, src_data, dst_data):
     validator = model.copy()
     validator.reset_state()
-    validator.phase = net5.Seq2Seq.Valid
+    validator.set_phase(net5.Seq2Seq.Valid)
     return compute_loss(validator, src_data, dst_data, "on")
 
     
@@ -64,11 +64,12 @@ def train(train_src_data, valid_src_data):
         params.INOUT_UNITS, 
         params.HIDDEN_UNITS 
     )
-    initialize_model(seq2seq)    
+    #initialize_model(seq2seq)    
     seq2seq.to_gpu()
 
     # select a optimizer
 #    optimizer = optimizers.AdaGrad(lr=0.01)
+#    optimizer = optimizers.MomentumSGD(lr=0.01)
     optimizer = optimizers.Adam()
 
     optimizer.setup(seq2seq)
@@ -97,7 +98,7 @@ def train_with_pretrained_model(seq2seq, optimizer, train_src_data, valid_src_da
 
         if epoch % params.DISPLAY_EPOCH == 0:
             train_loss = acc_loss.data / train_cols
-            valid_loss = validate(seq2seq, valid_src_data, valid_dst_data).data / valid_cols
+            valid_loss = 0#validate(seq2seq, valid_src_data, valid_dst_data).data / valid_cols
             message = "[{i}]train loss:\t{j}\tvalid loss:\t{k}".format(
                     i=epoch, j=train_loss, k=valid_loss)
             log_file.write(message + "\n")

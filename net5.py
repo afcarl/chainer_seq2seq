@@ -7,6 +7,7 @@ import chainer
 from chainer import Variable
 import chainer.links as L
 import chainer.functions as F
+import chainer.initializers as I
 
 
 __authotr__ = "kumada"
@@ -24,25 +25,31 @@ class Seq2Seq(chainer.Chain):
         @param inout_units: the number of input units 
         @param hidden_units: the number of hidden units 
         """
+        initializer = I.HeNormal()
         super(Seq2Seq, self).__init__(
-            l1=L.Linear(inout_units, hidden_units),
+            l1=L.Linear(inout_units, hidden_units, initialW=initializer),
             l2=L.LSTM(hidden_units, hidden_units),
             l4=L.LSTM(hidden_units, hidden_units),
-            l5=L.LSTM(hidden_units, hidden_units),
-            l3=L.Linear(hidden_units, inout_units),
+            l3=L.Linear(hidden_units, inout_units, initialW=initializer),
         )
         self.phase = Seq2Seq.Train
+        self.train = True
+
+    def set_phase(self, phase):
+        self.phase = phase
+        if self.phase == Seq2Seq:
+            self.phase = True
+        else:
+            self.phase = False 
 
     def reset_state(self):
         self.l2.reset_state()
         self.l4.reset_state()
-        self.l5.reset_state()
 
     def encode(self, x):
         h = self.l1(x)
-        p = self.l2(h)
-        p = self.l4(p)
-        p = self.l5(p)
+        p = self.l2(F.dropout(F.relu(h), train=self.train))
+        p = self.l4(F.dropout(F.relu(p), train=self.train))
         return p 
 
     def decode(self, p, t=None):
@@ -53,7 +60,7 @@ class Seq2Seq(chainer.Chain):
         y = self.l3(p) 
         if self.phase is Seq2Seq.Train:
             loss = F.mean_squared_error(y, t)
-            p = self.encode(t)
+            p = self.encode(y)
             return p, loss
         elif self.phase is Seq2Seq.Valid:
             loss = F.mean_squared_error(y, t)
