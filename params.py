@@ -1,7 +1,7 @@
 
 
-#PRETRAINDED_MODEL_PATH = "/home/ubuntu/results/seq2seq/experiment_01/model_test.pkl"
-#PRETRAINDED_OPTIMIZER_PATH = "/home/ubuntu/results/seq2seq/experiment_01/optimizer_test.pkl"
+PRETRAINDED_MODEL_PATH = "/home/ubuntu/results/seq2seq/experiment_01/2016-10-29/model.pkl"
+PRETRAINDED_OPTIMIZER_PATH = "/home/ubuntu/results/seq2seq/experiment_01/2016-10-29/optimizer.pkl"
 EPOCHS = 20000
 MODEL_PATH = "/home/ubuntu/results/seq2seq/experiment_01/model.pkl"
 OPTIMIZER_PATH = "/home/ubuntu/results/seq2seq/experiment_01/optimizer.pkl"
