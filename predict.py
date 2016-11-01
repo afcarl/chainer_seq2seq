@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from net4 import Seq2Seq
+from net5 import Seq2Seq
 import cPickle
 from chainer import Variable
 from chainer import cuda
