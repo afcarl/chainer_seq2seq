@@ -54,7 +54,7 @@ def compute_loss(model, src_data, dst_data, volatile):
 def validate(model, src_data, dst_data):
     validator = model.copy()
     validator.reset_state()
-    validator.set_phase(net5.Seq2Seq.Valid)
+    validator.phase = net5.Seq2Seq.Valid
     return compute_loss(validator, src_data, dst_data, "on")
 
     
