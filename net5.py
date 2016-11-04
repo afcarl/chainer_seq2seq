@@ -33,13 +33,6 @@ class Seq2Seq(chainer.Chain):
         )
         self.phase = Seq2Seq.Train
 
-#    def set_phase(self, phase):
-#        self.phase = phase
-#        if self.phase == Seq2Seq:
-#            self.phase = True
-#        else:
-#            self.phase = False 
-
     def reset_state(self):
         self.l2.reset_state()
 
