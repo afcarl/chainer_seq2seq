@@ -31,11 +31,11 @@ def compute_loss(model, src_data, dst_data, volatile):
             xp.asarray(
                 [src_data[indices[j], i] for j in range(rows)], 
                 dtype=np.float32
-            ),
+            )[:, np.newaxis],
             volatile=volatile
         ) 
         p = model.encode(x)
-        hiddens.append(p.data)
+        hiddens.append(xp.copy(p.data))
     
     # decode
     acc_loss = 0
@@ -44,7 +44,7 @@ def compute_loss(model, src_data, dst_data, volatile):
             xp.asarray(
                 [dst_data[indices[j], i] for j in range(rows)], 
                 dtype=np.float32
-            ),
+            )[:, np.newaxis],
             volatile=volatile
         )
 
@@ -56,7 +56,7 @@ def compute_loss(model, src_data, dst_data, volatile):
 def validate(model, src_data, dst_data):
     validator = model.copy()
     validator.reset_state()
-    validator.phase = net6.Seq2Seq.Valid
+    validator.set_phase(net6.Seq2Seq.Valid)
     return compute_loss(validator, src_data, dst_data, "on")
 
     
@@ -73,7 +73,7 @@ def train(train_src_data, valid_src_data):
 #    optimizer = optimizers.AdaGrad(lr=0.01)
 #    optimizer = optimizers.MomentumSGD(lr=0.01)
     optimizer = optimizers.Adam()
-
+#    optimizer = optimizers.RMSprop()
     optimizer.setup(seq2seq)
 
     train_with_pretrained_model(seq2seq, optimizer, train_src_data, valid_src_data)
